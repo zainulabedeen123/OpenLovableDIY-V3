@@ -14,9 +14,6 @@
 
 [functions]
   directory = "netlify/functions"
-  node_bundler = "esbuild"
-
-[functions.server]
-  node_bundler = "esbuild"
-  external_node_modules = ["@remix-run/node", "@remix-run/react", "react", "react-dom", "react-dom/server"]
+  node_bundler = "nft"
+  included_files = ["build/server/**", "node_modules/**"]
 
