@@ -1,39 +1,42 @@
-import { createRequestHandler } from '@remix-run/node';
-import { installGlobals } from '@remix-run/node';
+const { createRequestHandler } = require('@remix-run/node');
+const { installGlobals } = require('@remix-run/node');
 
 installGlobals();
 
-// Import the server build
-let build;
+// Cache the handler
+let handler;
 
-try {
-  build = await import('../../build/server/index.js');
-} catch (error) {
-  console.error('Failed to load server build:', error);
-  throw error;
+async function getHandler() {
+  if (!handler) {
+    // Import the server build
+    const build = require('../../build/server/index.js');
+
+    handler = createRequestHandler({
+      build,
+      mode: process.env.NODE_ENV || 'production',
+    });
+  }
+  return handler;
 }
 
-const handler = createRequestHandler({
-  build,
-  mode: process.env.NODE_ENV || 'production',
-});
+exports.handler = async function(event, context) {
+  const requestHandler = await getHandler();
 
-export default async function netlifyHandler(event, context) {
-  // Convert Netlify event to Web Request
+  // Convert Netlify event to Remix request
   const url = new URL(event.rawUrl);
-  
+
   const request = new Request(url.toString(), {
     method: event.httpMethod,
     headers: new Headers(event.headers),
-    body: event.body && event.isBase64Encoded 
-      ? Buffer.from(event.body, 'base64').toString() 
+    body: event.body && event.isBase64Encoded
+      ? Buffer.from(event.body, 'base64').toString()
       : event.body,
   });
 
   try {
-    const response = await handler(request, {});
-    
-    // Convert Web Response to Netlify response
+    const response = await requestHandler(request, {});
+
+    // Convert Remix response to Netlify response
     const headers = {};
     response.headers.forEach((value, key) => {
       headers[key] = value;
@@ -50,8 +53,15 @@ export default async function netlifyHandler(event, context) {
     console.error('Error handling request:', error);
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: 'Internal Server Error' }),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        error: 'Internal Server Error',
+        message: error.message,
+        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      }),
     };
   }
-}
+};
 

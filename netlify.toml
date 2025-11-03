@@ -1,7 +1,7 @@
 [build]
   command = "NODE_OPTIONS='--max-old-space-size=4096' pnpm run build"
   publish = "build/client"
-  
+
 [build.environment]
   NODE_VERSION = "20"
   NPM_FLAGS = "--legacy-peer-deps"
@@ -15,5 +15,6 @@
 
 [functions]
   directory = "netlify/functions"
-  node_bundler = "esbuild"
+  node_bundler = "nft"
+  included_files = ["build/server/**"]
 
