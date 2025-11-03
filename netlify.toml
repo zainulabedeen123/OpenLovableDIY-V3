@@ -15,5 +15,8 @@
 [functions]
   directory = "netlify/functions"
   node_bundler = "esbuild"
-  external_node_modules = ["@remix-run/node", "@remix-run/react", "react", "react-dom"]
+
+[functions.server]
+  node_bundler = "esbuild"
+  external_node_modules = ["@remix-run/node", "@remix-run/react", "react", "react-dom", "react-dom/server"]
 

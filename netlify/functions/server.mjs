@@ -3,39 +3,39 @@ import { installGlobals } from '@remix-run/node';
 
 installGlobals();
 
-// Cache the handler
-let handler;
+// Cache the request handler
+let cachedHandler;
 
-async function getHandler() {
-  if (!handler) {
+async function getRequestHandler() {
+  if (!cachedHandler) {
     // Import the server build
     const build = await import('../../build/server/index.js');
-    
-    handler = createRequestHandler({
+
+    cachedHandler = createRequestHandler({
       build,
       mode: process.env.NODE_ENV || 'production',
     });
   }
-  return handler;
+  return cachedHandler;
 }
 
 export const handler = async function(event, context) {
-  const requestHandler = await getHandler();
-  
+  const requestHandler = await getRequestHandler();
+
   // Convert Netlify event to Remix request
   const url = new URL(event.rawUrl);
-  
+
   const request = new Request(url.toString(), {
     method: event.httpMethod,
     headers: new Headers(event.headers),
-    body: event.body && event.isBase64Encoded 
-      ? Buffer.from(event.body, 'base64').toString() 
+    body: event.body && event.isBase64Encoded
+      ? Buffer.from(event.body, 'base64').toString()
       : event.body,
   });
 
   try {
     const response = await requestHandler(request, {});
-    
+
     // Convert Remix response to Netlify response
     const headers = {};
     response.headers.forEach((value, key) => {
@@ -56,7 +56,7 @@ export const handler = async function(event, context) {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ 
+      body: JSON.stringify({
         error: 'Internal Server Error',
         message: error.message,
         stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
